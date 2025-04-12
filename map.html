@@ -1,71 +1,66 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Kliini – Map</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body, html {
-      height: 100%;
-      margin: 0;
-      font-family: Arial, sans-serif;
-    }
-    #map {
-      height: 100vh;
-      width: 100%;
-    }
-  </style>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCqMzLnL3g1ChsSWZEVsCXbKmHf6rDI82Y"></script>
-</head>
 <body>
-  <div id="map"></div>
+  <header>Kliini – Kirjaa käynti</header>
+
+  <div class="status-buttons">
+    <button onclick="submitStatus('Sopimus')" style="background:#4CAF50;">🟢 Sopimus</button>
+    <button onclick="submitStatus('Kiinnostunut')" style="background:#2196F3;">🔵 Kiinnostunut</button>
+    <button onclick="submitStatus('Ei kotona')" style="background:#FFEB3B; color: #000;">🟡 Ei kotona</button>
+    <button onclick="submitStatus('Ei kiinnosta')" style="background:#f44336;">🔴 Ei kiinnosta</button>
+  </div>
+
+  <div id="map" style="height: 80vh;"></div>
+
+  <div class="bottom-nav">
+    <a href="index.html">Home</a>
+    <a href="map.html" class="active">Kliini</a>
+    <a href="leads.html">Leads</a>
+  </div>
 
   <script>
     let map;
 
     function initMap() {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const currentLocation = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          };
+      navigator.geolocation.getCurrentPosition(function (position) {
+        const location = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
 
-          map = new google.maps.Map(document.getElementById("map"), {
-            center: currentLocation,
-            zoom: 16,
-            mapTypeId: "satellite"
-          });
+        map = new google.maps.Map(document.getElementById("map"), {
+          center: location,
+          zoom: 16,
+          mapTypeId: 'satellite'
+        });
 
-          new google.maps.Marker({
-            position: currentLocation,
-            map,
-            label: "Sinä",
-            icon: {
-              path: google.maps.SymbolPath.CIRCLE,
-              scale: 8,
-              fillColor: "#4285F4",
-              fillOpacity: 1,
-              strokeWeight: 1,
-              strokeColor: "white"
-            }
-          });
-        },
-        () => alert("Sijaintia ei saatu."),
-        { enableHighAccuracy: true }
-      );
+        new google.maps.Marker({
+          position: location,
+          map,
+          label: "Sinä"
+        });
+      });
     }
 
-    window.onload = initMap;
+    function submitStatus(status) {
+      navigator.geolocation.getCurrentPosition(function (position) {
+        const data = {
+          email: localStorage.getItem("userEmail"),
+          status: status,
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+
+        fetch("https://hook.eu2.make.com/65lu22of8kb7gu5bpysw2qxovqm5fn6l", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        }).then(() => {
+          alert("Käynti kirjattu!");
+        }).catch(() => {
+          alert("Virhe lähetyksessä.");
+        });
+      });
+    }
   </script>
-  <div id="nav-placeholder"></div>
 
-<script>
-  fetch('nav.html')
-    .then(res => res.text())
-    .then(data => {
-      document.getElementById('nav-placeholder').innerHTML = data;
-    });
-</script>
-
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCqMzLnL3g1ChsSWZEVsCXbKmHf6rDI82Y&callback=initMap"></script>
 </body>
-</html>

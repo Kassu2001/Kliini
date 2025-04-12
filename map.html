@@ -57,5 +57,15 @@
 
     window.onload = initMap;
   </script>
+  <div id="nav-placeholder"></div>
+
+<script>
+  fetch('nav.html')
+    .then(res => res.text())
+    .then(data => {
+      document.getElementById('nav-placeholder').innerHTML = data;
+    });
+</script>
+
 </body>
 </html>

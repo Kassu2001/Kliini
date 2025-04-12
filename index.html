@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Kliini Sales Tracking</title>
+  <title>Kliini Sales App</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCqMzLnL3g1ChsSWZEVsCXbKmHf6rDI82Y"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-    #map { height: 90vh; width: 100%; }
-    #loginDiv { display: flex; justify-content: center; margin-top: 100px; }
-    .g_id_signin { margin-top: 20px; }
-    #controls { padding: 20px; }
-    .status-btn { margin: 5px; padding: 10px; font-size: 16px; }
+    body { font-family: Arial; margin: 0; }
+    #loginDiv { display: flex; justify-content: center; padding-top: 100px; }
+    #map { height: 60vh; width: 100vw; display: none; }
+    #controls { display: none; padding: 15px; }
+    .status-btn { margin: 5px; padding: 10px 15px; font-size: 16px; }
+    .extra-fields { display: none; margin-top: 10px; }
+    input, select, textarea { display: block; margin: 5px 0 10px 0; padding: 8px; width: 100%; max-width: 400px; }
   </style>
 </head>
 <body>
@@ -23,79 +24,98 @@
     <div class="g_id_signin" data-type="standard"></div>
   </div>
 
-  <div id="controls" style="display:none">
+  <div id="map"></div>
+
+  <div id="controls">
     <h3>Kliini – Kirjaa käynti</h3>
-    <button class="status-btn" onclick="submitForm('Sopimus')">🟢 Sopimus</button>
-    <button class="status-btn" onclick="submitForm('Kiinnostunut')">🔹 Kiinnostunut</button>
+    <button class="status-btn" onclick="selectStatus('Sopimus')">🟢 Sopimus</button>
+    <button class="status-btn" onclick="selectStatus('Kiinnostunut')">🔹 Kiinnostunut</button>
     <button class="status-btn" onclick="submitForm('Ei kotona')">🟡 Ei kotona</button>
     <button class="status-btn" onclick="submitForm('Ei kiinnosta')">🔴 Ei kiinnosta</button>
-  </div>
 
-  <div id="map" style="display:none;"></div>
+    <div id="extraFields" class="extra-fields">
+      <div id="kiinnostusOptions" style="display:none;">
+        <label>Kiinnostuksen tila:</label>
+        <select id="kiinnostusStatus">
+          <option>Tarjous sisään</option>
+          <option>Odottaa vastausta</option>
+          <option>Päivä ei lukossa</option>
+        </select>
+      </div>
+
+      <label>Nimi:</label>
+      <input type="text" id="nimi">
+
+      <label>Puhelin:</label>
+      <input type="text" id="puhelin">
+
+      <label>Päivä:</label>
+      <input type="date" id="paiva">
+
+      <label>Kommentit:</label>
+      <textarea id="kommentit"></textarea>
+
+      <button onclick="submitExtraForm()">Lähetä tiedot</button>
+    </div>
+  </div>
 
   <script>
     let userEmail = "";
+    let selectedStatus = "";
+    let userPosition = null;
+    let map;
 
     function handleCredentialResponse(response) {
       const jwt = JSON.parse(atob(response.credential.split(".")[1]));
       userEmail = jwt.email;
       document.getElementById("loginDiv").style.display = "none";
-      document.getElementById("controls").style.display = "block";
       document.getElementById("map").style.display = "block";
+      document.getElementById("controls").style.display = "block";
       initMap();
     }
 
     function initMap() {
-      if (!navigator.geolocation) {
-        alert("GPS ei käytettävissä");
-        return;
-      }
       navigator.geolocation.getCurrentPosition(position => {
-        const userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
-        const map = new google.maps.Map(document.getElementById("map"), {
-          center: userLocation,
-          zoom: 14,
-          mapTypeId: "hybrid"
-        });
-        new google.maps.Marker({ position: userLocation, map, label: "Sinä" });
-        loadLeads(map);
-      });
-    }
-
-    function loadLeads(map) {
-      fetch("https://hook.eu2.make.com/YOUR-RETRIEVAL-WEBHOOK")
-        .then(res => res.json())
-        .then(data => {
-          data.records.forEach(record => {
-            const lat = parseFloat(record.fields.Pituusaste);
-            const lng = parseFloat(record.fields.Leveysaste);
-            const label = record.fields.status || "?";
-            if (!isNaN(lat) && !isNaN(lng)) {
-              new google.maps.Marker({
-                position: { lat: lat, lng: lng },
-                map,
-                label: label.charAt(0)
-              });
-            }
-          });
-        });
-    }
-
-    function submitForm(status) {
-      navigator.geolocation.getCurrentPosition(position => {
-        const payload = {
-          email: userEmail,
-          status: status,
+        userPosition = {
           lat: position.coords.latitude,
           lng: position.coords.longitude
         };
-        fetch("https://hook.eu2.make.com/65lu22of8kb7gu5bpysw2qxovqm5fn6l", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        }).then(() => alert("Käynti kirjattu!")).catch(() => alert("Virhe tallennuksessa."));
+        map = new google.maps.Map(document.getElementById("map"), {
+          center: userPosition,
+          zoom: 15
+        });
+        new google.maps.Marker({ position: userPosition, map, label: "★" });
       });
+    }
+
+    function selectStatus(status) {
+      selectedStatus = status;
+      document.getElementById("extraFields").style.display = "block";
+      document.getElementById("kiinnostusOptions").style.display = (status === "Kiinnostunut") ? "block" : "none";
+    }
+
+    function submitForm(status) {
+      alert("Kirjattu: " + status);
+      // TODO: Send basic info to Make here
+    }
+
+    function submitExtraForm() {
+      const data = {
+        email: userEmail,
+        status: selectedStatus,
+        lat: userPosition.lat,
+        lng: userPosition.lng,
+        nimi: document.getElementById("nimi").value,
+        puhelin: document.getElementById("puhelin").value,
+        paiva: document.getElementById("paiva").value,
+        kommentit: document.getElementById("kommentit").value,
+        kiinnostusStatus: document.getElementById("kiinnostusStatus").value
+      };
+      alert("Lähettäisit nämä tiedot Make.com webhookiin: \n" + JSON.stringify(data, null, 2));
+      // TODO: fetch(...) to your webhook here
+      document.getElementById("extraFields").style.display = "none";
     }
   </script>
 </body>
 </html>
+

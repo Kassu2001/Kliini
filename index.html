@@ -1,108 +1,151 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Kliini Sales App</title>
+  <title>Kliini Sales Tracking</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCqMzLnL3g1ChsSWZEVsCXbKmHf6rDI82Y"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 0;
-      background-color: #f8f8f8;
     }
-    .navbar {
+    .nav {
       position: fixed;
       bottom: 0;
-      width: 100%;
+      left: 0;
+      right: 0;
+      height: 50px;
       display: flex;
-      justify-content: space-around;
-      background: #ffffff;
-      border-top: 1px solid #ddd;
+      background: #fff;
+      border-top: 1px solid #ccc;
     }
-    .nav-btn {
-      padding: 12px 0;
-      flex-grow: 1;
+    .nav div {
+      flex: 1;
       text-align: center;
+      line-height: 50px;
       font-size: 14px;
-      border: none;
-      background: none;
+      color: #444;
     }
-    .nav-btn.active {
+    .nav .active {
+      color: red;
       font-weight: bold;
-      color: #d32f2f;
     }
-    .main-screen {
-      padding: 20px;
-      padding-bottom: 70px;
+    .screen {
+      display: none;
+      padding: 16px;
     }
-    .card-btn {
+    .visible {
+      display: block;
+    }
+    .card {
+      border: 1px solid #ccc;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 8px;
       display: flex;
       align-items: center;
-      padding: 16px;
-      margin-bottom: 12px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-      font-size: 16px;
-      cursor: pointer;
-      border: 1px solid #eee;
     }
-    .card-btn img {
-      width: 32px;
-      height: 32px;
+    .card img {
+      width: 30px;
       margin-right: 12px;
     }
-    #loginDiv {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+    #map {
+      width: 100%;
+      height: calc(100vh - 110px);
     }
   </style>
 </head>
 <body>
+
+<!-- Google Login -->
 <div id="loginDiv">
   <div id="g_id_onload"
-       data-client_id="125405477433-nu37vooit33hf5um800ujq9o3hafilkb.apps.googleusercontent.com"
-       data-callback="handleCredentialResponse">
+    data-client_id="125405477433-nu37vooit33hf5um800ujq9o3hafilkb.apps.googleusercontent.com"
+    data-callback="handleCredentialResponse">
   </div>
   <div class="g_id_signin" data-type="standard"></div>
 </div>
 
-<div id="app" style="display:none">
-  <div class="main-screen">
-    <h2>Welcome to Kliini</h2>
-    <div class="card-btn" onclick="goTo('map')">
-      <img src="https://img.icons8.com/ios-filled/50/marker.png" alt="Map"> Map
-    </div>
-    <div class="card-btn" onclick="goTo('leads')">
-      <img src="https://img.icons8.com/ios-filled/50/flag.png" alt="Leads"> Leads
-    </div>
-    <div class="card-btn" onclick="goTo('lasso')">
-      <img src="https://img.icons8.com/ios-filled/50/select.png" alt="Lasso"> Lasso Tool
-    </div>
-    <div class="card-btn" onclick="goTo('route')">
-      <img src="https://img.icons8.com/ios-filled/50/route.png" alt="Route"> Route Planning
-    </div>
+<!-- HOME SCREEN -->
+<div id="home" class="screen">
+  <h2>Welcome to Kliini</h2>
+  <div class="card" onclick="navigate('map')">
+    <img src="https://img.icons8.com/ios-filled/50/marker.png" />
+    Map
   </div>
-
-  <div class="navbar">
-    <button class="nav-btn active" onclick="goTo('home')">Home</button>
-    <button class="nav-btn" onclick="goTo('map')">Kliini</button>
-    <button class="nav-btn" onclick="goTo('more')">More</button>
+  <div class="card">
+    <img src="https://img.icons8.com/ios-filled/50/flag.png" />
+    Leads
+  </div>
+  <div class="card">
+    <img src="https://img.icons8.com/ios-filled/50/hand-cursor.png" />
+    Lasso Tool
+  </div>
+  <div class="card">
+    <img src="https://img.icons8.com/ios-filled/50/directions.png" />
+    Route Planning
   </div>
 </div>
 
+<!-- MAP SCREEN -->
+<div id="mapScreen" class="screen">
+  <div id="map"></div>
+</div>
+
+<!-- Bottom nav -->
+<div class="nav">
+  <div id="nav-home" class="active" onclick="navigate('home')">Home</div>
+  <div id="nav-map" onclick="navigate('map')">Kliini</div>
+  <div id="nav-more" onclick="navigate('more')">More</div>
+</div>
+
 <script>
+  let userEmail = "";
+
   function handleCredentialResponse(response) {
-    const jwt = JSON.parse(atob(response.credential.split('.')[1]));
+    const jwt = JSON.parse(atob(response.credential.split(".")[1]));
+    userEmail = jwt.email;
     document.getElementById("loginDiv").style.display = "none";
-    document.getElementById("app").style.display = "block";
+    navigate('home');
   }
 
-  function goTo(page) {
-    alert('Navigate to: ' + page); // This will be replaced with real routing later
+  function navigate(screen) {
+    document.querySelectorAll(".screen").forEach(el => el.classList.remove("visible"));
+    document.querySelectorAll(".nav div").forEach(el => el.classList.remove("active"));
+
+    if (screen === 'map') {
+      document.getElementById("mapScreen").classList.add("visible");
+      initMap();
+      document.getElementById("nav-map").classList.add("active");
+    } else if (screen === 'home') {
+      document.getElementById("home").classList.add("visible");
+      document.getElementById("nav-home").classList.add("active");
+    } else {
+      alert("Coming soon!");
+      document.getElementById("home").classList.add("visible");
+      document.getElementById("nav-home").classList.add("active");
+    }
+  }
+
+  function initMap() {
+    navigator.geolocation.getCurrentPosition(pos => {
+      const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      const map = new google.maps.Map(document.getElementById("map"), {
+        center: loc,
+        zoom: 15,
+        mapTypeId: 'satellite'
+      });
+      new google.maps.Marker({
+        position: loc,
+        map,
+        title: "You are here",
+        icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+      });
+    }, err => {
+      alert("Failed to get location");
+    });
   }
 </script>
 </body>

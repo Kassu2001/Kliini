@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Kliini – Leads</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .back {
+      margin-bottom: 20px;
+      display: inline-block;
+    }
+    h2 {
+      margin-top: 0;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      background: #f0f0f0;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="back">← Back to Home</a>
+  <h2>Kliini – Leads</h2>
+
+  <ul id="leadList">
+    <li>Loading leads...</li>
+  </ul>
+
+  <script>
+    // In future: Fetch leads from Airtable here
+    const leads = [
+      { address: "Nauvontie 1, Helsinki", status: "Kiinnostunut" },
+      { address: "Kuovinkatu 1, Kaarina", status: "Ei kiinnosta" }
+    ];
+
+    const listEl = document.getElementById('leadList');
+    listEl.innerHTML = "";
+
+    leads.forEach(lead => {
+      const li = document.createElement('li');
+      li.innerHTML = `<strong>${lead.address}</strong><br>Status: ${lead.status}`;
+      listEl.appendChild(li);
+    });
+  </script>
+</body>
+</html>

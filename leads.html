@@ -71,5 +71,15 @@
     <a href="map.html">Kliini</a>
     <a href="leads.html" class="active">Leads</a>
   </div>
+  <div id="nav-placeholder"></div>
+
+<script>
+  fetch('nav.html')
+    .then(res => res.text())
+    .then(data => {
+      document.getElementById('nav-placeholder').innerHTML = data;
+    });
+</script>
+
 </body>
 </html>

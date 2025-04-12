@@ -1,55 +1,75 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>Kliini – Leads</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 20px;
+      margin: 0;
+      background-color: #f9f9f9;
     }
-    .back {
-      margin-bottom: 20px;
-      display: inline-block;
+    header {
+      background-color: #ffffff;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+      border-bottom: 1px solid #ddd;
     }
-    h2 {
-      margin-top: 0;
+    .content {
+      padding: 1rem;
     }
-    ul {
-      list-style: none;
-      padding: 0;
+    .lead-card {
+      background-color: #ffffff;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
-    li {
-      background: #f0f0f0;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 8px;
+    .lead-card h4 {
+      margin: 0 0 8px 0;
+    }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      background-color: #ffffff;
+      border-top: 1px solid #ccc;
+      display: flex;
+      justify-content: space-around;
+      padding: 0.5rem 0;
+    }
+    .bottom-nav a {
+      text-align: center;
+      font-size: 0.9rem;
+      text-decoration: none;
+      color: black;
+      flex-grow: 1;
+    }
+    .bottom-nav a.active {
+      font-weight: bold;
+      color: #e53935;
     }
   </style>
 </head>
 <body>
-  <a href="index.html" class="back">← Back to Home</a>
-  <h2>Kliini – Leads</h2>
+  <header>My Leads</header>
+  <div class="content" id="leadList">
+    <div class="lead-card">
+      <h4>Test Lead</h4>
+      <p>Status: Kiinnostunut</p>
+      <p>Päivä: 2025-04-15</p>
+      <p>Kommentti: Soitettu kerran, odottaa vastausta.</p>
+    </div>
+    <!-- Add more leads dynamically with JS later -->
+  </div>
 
-  <ul id="leadList">
-    <li>Loading leads...</li>
-  </ul>
-
-  <script>
-    // In future: Fetch leads from Airtable here
-    const leads = [
-      { address: "Nauvontie 1, Helsinki", status: "Kiinnostunut" },
-      { address: "Kuovinkatu 1, Kaarina", status: "Ei kiinnosta" }
-    ];
-
-    const listEl = document.getElementById('leadList');
-    listEl.innerHTML = "";
-
-    leads.forEach(lead => {
-      const li = document.createElement('li');
-      li.innerHTML = `<strong>${lead.address}</strong><br>Status: ${lead.status}`;
-      listEl.appendChild(li);
-    });
-  </script>
+  <div class="bottom-nav">
+    <a href="index.html">Home</a>
+    <a href="map.html">Kliini</a>
+    <a href="leads.html" class="active">Leads</a>
+  </div>
 </body>
 </html>

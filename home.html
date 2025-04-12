@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Welcome to Kliini</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+  <h2 style="text-align:center;">Welcome to Kliini</h2>
+  <div style="padding: 20px;">
+    <a href="map.html" style="display:block; margin-bottom:10px;">📍 Map</a>
+    <a href="leads.html" style="display:block;">📋 Leads</a>
+  </div>
+
+  <div id="nav"></div>
+  <script>
+    fetch('nav.html')
+      .then(res => res.text())
+      .then(data => document.getElementById('nav').innerHTML = data);
+  </script>
+</body>
+</html>

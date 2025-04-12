@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Kliini Sales Tracking</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    #map { height: 90vh; width: 100%; }
+    #loginDiv { display: flex; justify-content: center; align-items: center; height: 100vh; }
+    .g_id_signin { margin-top: 100px; }
+  </style>
+</head>
+<body>
+  <div id="loginDiv">
+    <div id="g_id_onload"
+        data-client_id="125405477433-nu37vooit33hf5um800ujq9o3hafilkb.apps.googleusercontent.com"
+        data-callback="handleCredentialResponse">
+    </div>
+    <div class="g_id_signin" data-type="standard"></div>
+  </div>
+
+  <div id="map" style="display:none;"></div>
+
+  <script>
+    let userEmail = "";
+
+    function handleCredentialResponse(response) {
+      const jwt = JSON.parse(atob(response.credential.split(".")[1]));
+      userEmail = jwt.email;
+      document.getElementById("loginDiv").style.display = "none";
+      document.getElementById("map").style.display = "block";
+      initMap();
+    }
+
+    function initMap() {
+      navigator.geolocation.getCurrentPosition(function(pos) {
+        const myLatLng = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
+        };
+
+        const map = new google.maps.Map(document.getElementById("map"), {
+          zoom: 15,
+          center: myLatLng
+        });
+
+        new google.maps.Marker({
+          position: myLatLng,
+          map,
+          title: "Sijaintisi",
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 7,
+            fillColor: "#00f",
+            fillOpacity: 1,
+            strokeColor: "#fff",
+            strokeWeight: 2
+          }
+        });
+      });
+    }
+  </script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCqMzLnL3g1ChsSWZEVsCXbKmHf6rDI82Y"></script>
+</body>
+</html>

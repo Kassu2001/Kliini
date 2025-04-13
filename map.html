@@ -1,19 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Kliini – Kirjaa käynti</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kliini Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    html, body {
-      margin: 0;
-      height: 100%;
-      font-family: Arial, sans-serif;
-    }
     #map {
-      height: 100%;
+      height: 90vh;
       width: 100%;
-      position: absolute;
     }
     .status-buttons {
       position: absolute;
@@ -22,107 +15,96 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      z-index: 999;
+      z-index: 1000;
     }
     .status-buttons button {
-      padding: 6px 12px;
+      font-size: 12px;
+      padding: 6px 10px;
       border: none;
-      border-radius: 12px;
-      color: white;
-      font-weight: bold;
+      border-radius: 6px;
       cursor: pointer;
     }
-    .sopimus { background-color: #4caf50; }
-    .kiinnostunut { background-color: #2196f3; }
-    .ei-kotona { background-color: #ffeb3b; color: black; }
-    .ei-kiinnosta { background-color: #f44336; }
-
     .bottom-nav {
       position: fixed;
       bottom: 0;
       width: 100%;
-      background-color: #fff;
+      background-color: white;
+      border-top: 1px solid #ccc;
       display: flex;
       justify-content: space-around;
-      border-top: 1px solid #ccc;
-      z-index: 999;
+      padding: 0.5rem 0;
     }
     .bottom-nav a {
-      flex-grow: 1;
       text-align: center;
-      padding: 10px;
+      font-size: 0.9rem;
       text-decoration: none;
       color: black;
+      flex-grow: 1;
     }
     .bottom-nav a.active {
-      color: #e53935;
       font-weight: bold;
+      color: #e53935;
     }
   </style>
 </head>
 <body>
-  <div class="status-buttons">
-    <button class="sopimus" onclick="handleStatus('Sopimus')">🔵 Sopimus</button>
-    <button class="kiinnostunut" onclick="handleStatus('Kiinnostunut')">🔹 Kiinnostunut</button>
-    <button class="ei-kotona" onclick="handleStatus('Ei kotona')">🔺 Ei kotona</button>
-    <button class="ei-kiinnosta" onclick="handleStatus('Ei kiinnosta')">🔴 Ei kiinnosta</button>
-  </div>
-
   <div id="map"></div>
 
+  <div class="status-buttons">
+    <button onclick="submitStatus('Sopimus')">🟢 Sopimus</button>
+    <button onclick="submitStatus('Kiinnostunut')">🔵 Kiinnostunut</button>
+    <button onclick="submitStatus('Ei kotona')">🟡 Ei kotona</button>
+    <button onclick="submitStatus('Ei kiinnosta')">🔴 Ei kiinnosta</button>
+  </div>
+
   <div class="bottom-nav">
-    <a href="home.html">Home</a>
+    <a href="index.html">Home</a>
     <a href="map.html" class="active">Kliini</a>
-    <a href="leads.html">Leads</a>
+    <a href="#">More</a>
   </div>
 
   <script>
     let map;
-    let userEmail = localStorage.getItem("userEmail") || "unknown@user.com";
+    let userEmail = localStorage.getItem("userEmail") || "anonymous@kliini.com";
 
     function initMap() {
-      map = new google.maps.Map(document.getElementById("map"), {
-        zoom: 14,
-        center: { lat: 60.1699, lng: 24.9384 },
-        gestureHandling: "greedy"
-      });
+      navigator.geolocation.getCurrentPosition(pos => {
+        const userLocation = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
+        };
 
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(pos => {
-          const userPos = {
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude
-          };
-          new google.maps.Marker({
-            position: userPos,
-            map,
-            title: "Sinä"
-          });
-          map.setCenter(userPos);
+        map = new google.maps.Map(document.getElementById("map"), {
+          center: userLocation,
+          zoom: 16,
+          gestureHandling: "greedy"
         });
-      }
 
-      fetch("https://hook.eu2.make.com/6trmmdhx89817rudr7ts3jybpnz14l2p")
-        .then(res => res.json())
-        .then(data => {
-          data.records.forEach(record => {
-            const { Leveysaste, Pituusaste, status, Osoite, Nimi, Kommentit } = record.fields;
-            if (Leveysaste && Pituusaste && status) {
+        new google.maps.Marker({
+          position: userLocation,
+          map,
+          title: "Sijaintisi",
+          icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+        });
+
+        fetch("https://hook.eu2.make.com/6trmmdhx89817rudr7ts3jybpnz14l2p")
+          .then(res => res.json())
+          .then(data => {
+            data.forEach(pin => {
               new google.maps.Marker({
-                position: { lat: Leveysaste, lng: Pituusaste },
+                position: { lat: parseFloat(pin.lat), lng: parseFloat(pin.lng) },
                 map,
-                title: `${status}: ${Nimi || "-"}`
+                title: `${pin.status} – ${pin.email}\n${pin.address}`,
               });
-            }
-          });
-        });
+            });
+          })
+          .catch(err => console.error("Pin fetch error:", err));
+      });
     }
 
-    function handleStatus(status) {
-      if (!navigator.geolocation) return alert("GPS ei käytettävissä");
-
+    function submitStatus(status) {
       navigator.geolocation.getCurrentPosition(pos => {
-        const payload = {
+        const data = {
           email: userEmail,
           status: status,
           lat: pos.coords.latitude,
@@ -132,13 +114,19 @@
         fetch("https://hook.eu2.make.com/65lu22of8kb7gu5bpysw2qxovqm5fn6l", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        })
-        .then(() => alert("Status kirjattu onnistuneesti!"))
-        .catch(() => alert("Virhe tallennuksessa"));
+          body: JSON.stringify(data)
+        }).then(() => {
+          alert("Käynti kirjattu!");
+        }).catch(() => {
+          alert("Lähetysvirhe.");
+        });
       });
     }
   </script>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCqMzLnL3g1ChsSWZEVsCXbKmHf6rDI82Y&callback=initMap" async defer></script>
+
+  <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCqMzLnL3g1ChsSWZEVsCXbKmHf6rDI82Y&callback=initMap">
+  </script>
 </body>
 </html>
+

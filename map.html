@@ -1,187 +1,144 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Kliini Sales Map</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-      html, body {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-      }
-      #map {
-        height: 100%;
-        width: 100%;
-      }
-      #statusButtons {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        display: none;
-        flex-direction: column;
-        gap: 8px;
-        background: rgba(255, 255, 255, 0.9);
-        padding: 10px;
-        border-radius: 12px;
-        z-index: 5;
-      }
-      #statusButtons button {
-        padding: 6px 10px;
-        border: none;
-        border-radius: 6px;
-        font-size: 14px;
-        cursor: pointer;
-        color: white;
-      }
-      .sopimus { background-color: green; }
-      .kiinnostunut { background-color: blue; }
-      .ei-kotona { background-color: orange; }
-      .ei-kiinnosta { background-color: red; }
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kliini – Kirjaa käynti</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: Arial, sans-serif;
+    }
+    #map {
+      height: 100%;
+      width: 100%;
+      position: absolute;
+    }
+    .status-buttons {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 999;
+    }
+    .status-buttons button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .sopimus { background-color: #4caf50; }
+    .kiinnostunut { background-color: #2196f3; }
+    .ei-kotona { background-color: #ffeb3b; color: black; }
+    .ei-kiinnosta { background-color: #f44336; }
 
-      .bottom-nav {
-        position: fixed;
-        bottom: 0;
-        width: 100%;
-        background-color: #fff;
-        display: flex;
-        justify-content: space-around;
-        padding: 10px 0;
-        border-top: 1px solid #ccc;
-        z-index: 5;
-      }
-      .bottom-nav a {
-        text-decoration: none;
-        color: black;
-        font-size: 14px;
-      }
-      .bottom-nav a.active {
-        color: red;
-        font-weight: bold;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="map"></div>
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      background-color: #fff;
+      display: flex;
+      justify-content: space-around;
+      border-top: 1px solid #ccc;
+      z-index: 999;
+    }
+    .bottom-nav a {
+      flex-grow: 1;
+      text-align: center;
+      padding: 10px;
+      text-decoration: none;
+      color: black;
+    }
+    .bottom-nav a.active {
+      color: #e53935;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="status-buttons">
+    <button class="sopimus" onclick="handleStatus('Sopimus')">🔵 Sopimus</button>
+    <button class="kiinnostunut" onclick="handleStatus('Kiinnostunut')">🔹 Kiinnostunut</button>
+    <button class="ei-kotona" onclick="handleStatus('Ei kotona')">🔺 Ei kotona</button>
+    <button class="ei-kiinnosta" onclick="handleStatus('Ei kiinnosta')">🔴 Ei kiinnosta</button>
+  </div>
 
-    <div id="statusButtons">
-      <button class="sopimus" onclick="submitForm('Sopimus')">🟢 Sopimus</button>
-      <button class="kiinnostunut" onclick="submitForm('Kiinnostunut')">🔹 Kiinnostunut</button>
-      <button class="ei-kotona" onclick="submitForm('Ei kotona')">🟡 Ei kotona</button>
-      <button class="ei-kiinnosta" onclick="submitForm('Ei kiinnosta')">🔴 Ei kiinnosta</button>
-      <button onclick="clearManualPin()">❌ Peruuta</button>
-    </div>
+  <div id="map"></div>
 
-    <div class="bottom-nav">
-      <a href="index.html">Home</a>
-      <a href="map.html" class="active">Kliini</a>
-      <a href="leads.html">Leads</a>
-    </div>
+  <div class="bottom-nav">
+    <a href="home.html">Home</a>
+    <a href="map.html" class="active">Kliini</a>
+    <a href="leads.html">Leads</a>
+  </div>
 
-    <script>
-      let map;
-      let manualMarker = null;
-      let selectedLat = null;
-      let selectedLng = null;
+  <script>
+    let map;
+    let userEmail = localStorage.getItem("userEmail") || "unknown@user.com";
 
-      const airtableReadEndpoint = "https://hook.eu2.make.com/6trmmdhx89817rudr7ts3jybpnz14l2p"; // Replace
-      const airtableWriteEndpoint = "https://hook.eu2.make.com/65lu22of8kb7gu5bpysw2qxovqm5fn6l"; // Replace
+    function initMap() {
+      map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 14,
+        center: { lat: 60.1699, lng: 24.9384 },
+        gestureHandling: "greedy"
+      });
 
-      function initMap() {
-        map = new google.maps.Map(document.getElementById("map"), {
-          center: { lat: 60.1699, lng: 24.9384 },
-          zoom: 13,
-          gestureHandling: "greedy",
-        });
-
-        navigator.geolocation.getCurrentPosition((pos) => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
           const userPos = {
             lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
+            lng: pos.coords.longitude
           };
-          map.setCenter(userPos);
-          new google.maps.Marker({ position: userPos, map, label: "Sinä" });
-        });
-
-        map.addListener("click", (e) => {
-          if (manualMarker) manualMarker.setMap(null);
-          manualMarker = new google.maps.Marker({
-            position: e.latLng,
-            map: map,
-            label: "🫋"
+          new google.maps.Marker({
+            position: userPos,
+            map,
+            title: "Sinä"
           });
-
-          selectedLat = e.latLng.lat();
-          selectedLng = e.latLng.lng();
-
-          document.getElementById("statusButtons").style.display = "flex";
+          map.setCenter(userPos);
         });
-
-        loadExistingPins();
       }
 
-      function submitForm(status) {
-        const email = localStorage.getItem("userEmail");
-        if (!email || !selectedLat || !selectedLng) {
-          alert("Puuttuva tieto. Varmista sähköposti ja sijainti.");
-          return;
-        }
+      fetch("https://hook.eu2.make.com/6trmmdhx89817rudr7ts3jybpnz14l2p")
+        .then(res => res.json())
+        .then(data => {
+          data.records.forEach(record => {
+            const { Leveysaste, Pituusaste, status, Osoite, Nimi, Kommentit } = record.fields;
+            if (Leveysaste && Pituusaste && status) {
+              new google.maps.Marker({
+                position: { lat: Leveysaste, lng: Pituusaste },
+                map,
+                title: `${status}: ${Nimi || "-"}`
+              });
+            }
+          });
+        });
+    }
 
-        const data = {
-          email,
-          status,
-          lat: selectedLat,
-          lng: selectedLng,
-          timestamp: new Date().toISOString(),
+    function handleStatus(status) {
+      if (!navigator.geolocation) return alert("GPS ei käytettävissä");
+
+      navigator.geolocation.getCurrentPosition(pos => {
+        const payload = {
+          email: userEmail,
+          status: status,
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
         };
 
-        fetch(airtableWriteEndpoint, {
+        fetch("https://hook.eu2.make.com/65lu22of8kb7gu5bpysw2qxovqm5fn6l", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data)
-        }).then(() => {
-          alert("Tallennettu!");
-          window.location.reload();
-        }).catch(() => alert("Virhe lähetettäessä"));
-      }
-
-      function clearManualPin() {
-        if (manualMarker) manualMarker.setMap(null);
-        manualMarker = null;
-        selectedLat = null;
-        selectedLng = null;
-        document.getElementById("statusButtons").style.display = "none";
-      }
-
-      function loadExistingPins() {
-        fetch(airtableReadEndpoint)
-          .then(res => res.json())
-          .then(data => {
-            data.records.forEach((rec) => {
-              const pos = { lat: rec.fields.lat, lng: rec.fields.lng };
-              const color = rec.fields.status === "Sopimus" ? "green"
-                         : rec.fields.status === "Kiinnostunut" ? "blue"
-                         : rec.fields.status === "Ei kotona" ? "yellow"
-                         : "red";
-
-              new google.maps.Marker({
-                position: pos,
-                map,
-                icon: {
-                  path: google.maps.SymbolPath.CIRCLE,
-                  scale: 8,
-                  fillColor: color,
-                  fillOpacity: 1,
-                  strokeWeight: 1,
-                },
-              });
-            });
-          })
-          .catch((err) => console.error("Failed loading pins:", err));
-      }
-    </script>
-
-    <script async defer
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCqMzLnL3g1ChsSWZEVsCXbKmHf6rDI82Y&callback=initMap">
-    </script>
-  </body>
+          body: JSON.stringify(payload)
+        })
+        .then(() => alert("Status kirjattu onnistuneesti!"))
+        .catch(() => alert("Virhe tallennuksessa"));
+      });
+    }
+  </script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCqMzLnL3g1ChsSWZEVsCXbKmHf6rDI82Y&callback=initMap" async defer></script>
+</body>
 </html>
